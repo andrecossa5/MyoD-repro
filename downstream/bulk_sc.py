@@ -15,11 +15,12 @@ matplotlib.use('MacOSX')
 
 
 # Paths
+dataset = 'MM23'
 path_main = '/Users/IEO5505/Desktop/MyoD-repro/'
-path_data = os.path.join(path_main, 'data')
+path_data = os.path.join(path_main, 'data', dataset)
 
 # Read single-cell data and compute clonal prevalences
-sc_meta = pd.read_csv(os.path.join(path_data, 'meta', 'cells_meta.csv'), index_col=0)
+sc_meta = pd.read_csv(os.path.join(path_data, 'cells_meta.csv'), index_col=0)
 freq_sc = (
     sc_meta
     .groupby('sample')
@@ -28,7 +29,7 @@ freq_sc = (
 )
 
 # Read bulk data and confront with sc
-freq_bulk = pd.read_csv(os.path.join(path_data, 'bulk', 'summary', 'bulk_GBC_reference.csv'), index_col=0)
+freq_bulk = pd.read_csv(os.path.join(path_data, 'bulk_GBC_reference.csv'), index_col=0)
 freq_bulk = ( 
     freq_bulk
     .groupby('sample')
@@ -39,7 +40,6 @@ freq_bulk = (
 
 # Merge
 df = freq_bulk.merge(freq_sc, on=['sample', 'GBC'], how='outer')
-df.query()
 
 # Compute numbers
 # freq_bulk.groupby('sample')['GBC'].nunique()

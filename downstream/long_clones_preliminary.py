@@ -18,24 +18,39 @@ dataset = 'MM23'
 path_data = os.path.join(path_main, 'data', dataset)
 path_results = os.path.join(path_main, 'results', 'clonal')
 
-# Bulk
-bulk = pd.read_csv(os.path.join(path_data, 'common.csv'), index_col=0)
-# for mice in ['1','2','3']:
-#     bulk.loc[bulk.index.str.endswith(mice), bulk.index.str.endswith(mice)].loc[f'13_PT{mice}'].sort_values()
-
 
 ##
 
 
 # SC
 meta = pd.read_csv(os.path.join(path_data, 'cells_meta.csv'), index_col=0).iloc[:,:4]
-df_ = meta.groupby(['mouse', 'origin', 'GBC']).size().to_frame('n_cells').reset_index()
-df_.query('n_cells>=5').groupby(['mouse', 'origin'])['GBC'].nunique().to_frame('n>5').reset_index()
-df_.query('n_cells>=5').groupby(['mouse', 'GBC'])['origin'].nunique().to_frame('n_sites').reset_index().query('n_sites>2').groupby('mouse')['GBC'].nunique()
+df = (
+    meta.groupby(['mouse', 'origin', 'GBC'])
+    .size().to_frame('n')
+    .reset_index()
+    .assign(freq=lambda x: x['n'] / x.groupby(['mouse', 'origin'])['n'].transform('sum'))
+)
+
+# Calculate longitudinal clones statistics
+grouped = df.groupby('mouse')
+L = []
+for mouse, df in grouped:
+    origins = df['origin'].unique()
+    L.append((
+        df[['GBC', 'origin', 'n']]
+        .pivot(index='GBC', columns='origin', values='n').fillna(0).astype(int)
+        .assign(
+            n_cells=lambda x: x.sum(axis=1),
+            n_sites=lambda x: (x.loc[:,x.columns.isin(origins)]>0).sum(axis=1),
+            median_n_cells_per_site=lambda x: x.iloc[:,:4].median(axis=1),
+            mouse=mouse,
+            filtered=lambda x: (x['median_n_cells_per_site']>=5) & (x['n_sites']>1)
+        )
+        .query('n_cells>=50 and n_sites>1')
+        .sort_values('median_n_cells_per_site', ascending=False)
+    ))
+pd.concat(L).to_csv(os.path.join(path_results, f'{dataset}_clone_selection.csv'))
 
 
 ##
 
-
-# meta['GBC'].nunique()
-# df_.query('GBC=="CAATATGTCCTGCAGGCA" and mouse=="M1"')

@@ -1,1 +1,2 @@
-from . import plotting
+from .plotting import *
+from .tests import *

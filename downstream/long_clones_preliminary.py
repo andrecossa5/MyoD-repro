@@ -24,7 +24,7 @@ path_results = os.path.join(path_main, 'results', 'clonal')
 
 # SC
 meta = pd.read_csv(os.path.join(path_data, 'cells_meta.csv'), index_col=0).iloc[:,:4]
-df = (
+df_freq = (
     meta.groupby(['mouse', 'origin', 'GBC'])
     .size().to_frame('n')
     .reset_index()
@@ -32,7 +32,7 @@ df = (
 )
 
 # Calculate longitudinal clones statistics
-grouped = df.groupby('mouse')
+grouped = df_freq.groupby('mouse')
 L = []
 for mouse, df in grouped:
     origins = df['origin'].unique()
@@ -54,3 +54,21 @@ pd.concat(L).to_csv(os.path.join(path_results, f'{dataset}_clone_selection.csv')
 
 ##
 
+
+grouped = df_freq.groupby('mouse')
+L = []
+for mouse, df in grouped:
+    origins = df['origin'].unique()
+    L.append((
+        df[['GBC', 'origin', 'freq']]
+        .pivot(index='GBC', columns='origin', values='freq').fillna(0)
+        .assign(
+            n_sites=lambda x: (x.loc[:,x.columns.isin(origins)]>0).sum(axis=1),
+            mouse=mouse,
+        )
+        .sort_values('n_sites', ascending=False)
+    ))
+pd.concat(L).to_csv(os.path.join(path_results, f'{dataset}_all_clones_frequencies.csv'))
+
+
+##

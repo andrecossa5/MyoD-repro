@@ -119,6 +119,8 @@ def compute_enrichment(df, col1, col2, target):
 
     # Results
     results = pd.DataFrame({
+        'group' : groups,
+        'target' : [ target for _ in groups ],
         'perc_in_target' : target_ratio_array,
         'odds_ratio' : oddsratio_array,
         'FDR' : pvals,
